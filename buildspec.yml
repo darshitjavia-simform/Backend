@@ -4,13 +4,14 @@ env:
   variables:
     PYTHON_VERSION: "3.9"
     APP_NAME: "todo-api"
-    FRONTEND_URL: "http://localhost:3000"   # change for prod
-  secrets-manager:
-  DB_HOST:     "todo-api:db_host"
-  DB_USER:     "todo-api:db_user"
-  DB_PASSWORD: "todo-api:db_password"
-  DB_NAME:     "todo-api:db_name"
+    FRONTEND_URL: "http://localhost:3000"
 
+  secrets-manager:
+    DB_HOST:     "todo-api:db_host"
+    DB_USER:     "todo-api:db_user"
+    DB_PASSWORD: "todo-api:db_password"
+    DB_NAME:     "todo-api:db_name"
+    
 phases:
   install:
     runtime-versions:
