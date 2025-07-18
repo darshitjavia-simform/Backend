@@ -52,16 +52,17 @@ phases:
       - rm -rf .git __pycache__ *.pyc tests/
 
   post_build:
-  commands:
-    - python -c "
-      import sys
-      try:
-          from app import app
-          print('✅ Flask app import successful')
-      except Exception as e:
-          print(f'❌ Flask app import failed: {e}')
-          sys.exit(1)
-      "
+    commands:
+      - echo "Validating Flask app import..."
+      - |
+        python -c "
+        try:
+            from app import app
+            print('✅ Flask app import successful')
+        except Exception as e:
+            print(f'❌ Flask app import failed: {e}')
+            sys.exit(1)
+        "
       - echo "Build finished."
 
 artifacts:
