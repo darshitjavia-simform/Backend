@@ -45,6 +45,7 @@ phases:
       - pytest tests/ || echo "⚠️ No tests or failed tests"
       - echo "Preparing build artifact..."
       - mkdir -p build
+      - rm -rf build 
       - cp -r . build/
       - cd build
       - rm -rf .git __pycache__ *.pyc tests/
