@@ -7,10 +7,10 @@ env:
     FRONTEND_URL: "http://localhost:3000"
 
   secrets-manager:
-    DB_HOST:     "todo-api:db_host"
-    DB_USER:     "todo-api:db_user"
-    DB_PASSWORD: "todo-api:db_password"
-    DB_NAME:     "todo-api:db_name"
+    DB_HOST:     "todo-api-db:db_host"
+    DB_USER:     "todo-api-db:db_user"
+    DB_PASSWORD: "todo-api-db:db_password"
+    DB_NAME:     "todo-api-db:db_name"
     
 phases:
   install:
