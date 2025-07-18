@@ -6,10 +6,10 @@ env:
     APP_NAME: "todo-api"
     FRONTEND_URL: "http://localhost:3000"   # change for prod
   secrets-manager:
-    DB_HOST: "todo-api:host"        # or full ARN
-    DB_USER: "todo-api:username"
-    DB_PASSWORD: "todo-api:password"
-    DB_NAME: "todo-api:database"
+    DB_HOST: "todo-api-db:host"        # or full ARN
+    DB_USER: "todo-api-db:username"
+    DB_PASSWORD: "todo-api-db:password"
+    DB_NAME: "todo-api-db:database"
 
 phases:
   install:
