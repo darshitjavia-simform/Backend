@@ -19,6 +19,7 @@ phases:
     commands:
       - echo "Installing Python dependencies..."
       - pip install -r requirements.txt
+      - pip install pytest
 
   pre_build:
     commands:
@@ -46,22 +47,21 @@ phases:
       - echo "Preparing build artifact..."
       - mkdir -p build
       - rm -rf build 
-      - cp -r . build/
+      - cp -r --parents $(find . -type f -not -path './build/*') build/
       - cd build
       - rm -rf .git __pycache__ *.pyc tests/
 
   post_build:
-    commands:
-      - echo "Validating Flask app import..."
-      - |
-        python -c "
-        try:
-            from app import app
-            print('✅ Flask app import successful')
-        except Exception as e:
-            print(f'❌ Flask app import failed: {e}')
-            sys.exit(1)
-        "
+  commands:
+    - python -c "
+      import sys
+      try:
+          from app import app
+          print('✅ Flask app import successful')
+      except Exception as e:
+          print(f'❌ Flask app import failed: {e}')
+          sys.exit(1)
+      "
       - echo "Build finished."
 
 artifacts:
