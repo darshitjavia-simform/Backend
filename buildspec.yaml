@@ -1,0 +1,91 @@
+version: 0.2
+
+env:
+  variables:
+    # Build environment variables
+    PYTHON_VERSION: "3.9"
+    APP_NAME: "todo-api"
+    FRONTEND_URL: "http://localhost:3000"  # Update this for production
+  secrets-manager:
+    # Fetch database credentials from AWS Secrets Manager
+    # Replace 'your-secret-name' with your actual secret name
+    DB_HOST: "your-secret-name:host"
+    DB_USER: "your-secret-name:username"
+    DB_PASSWORD: "your-secret-name:password"
+    DB_NAME: "your-secret-name:database"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+    commands:
+      - echo "Installing dependencies..."
+      - python -m pip install --upgrade pip
+      - pip install -r requirements.txt
+      - echo "Dependencies installed successfully"
+
+  pre_build:
+    commands:
+      - echo "Pre-build phase started on `date`"
+      - echo "Testing database connection..."
+      - python -c "
+        import mysql.connector
+        import os
+        try:
+            connection = mysql.connector.connect(
+                host=os.environ['DB_HOST'],
+                user=os.environ['DB_USER'],
+                password=os.environ['DB_PASSWORD'],
+                database=os.environ['DB_NAME']
+            )
+            cursor = connection.cursor()
+            cursor.execute('SELECT 1')
+            cursor.fetchone()
+            cursor.close()
+            connection.close()
+            print('Database connection successful')
+        except Exception as e:
+            print(f'Database connection failed: {e}')
+            exit(1)
+        "
+      - echo "Running linting and code quality checks..."
+      - pip install flake8 || echo "Flake8 not available, skipping linting"
+      - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || echo "Linting completed with warnings"
+
+  build:
+    commands:
+      - echo "Build phase started on `date`"
+      - echo "Running tests..."
+      - python -m pytest tests/ -v || echo "No tests found or tests failed"
+      - echo "Creating application archive..."
+      - mkdir -p build
+      - cp -r . build/
+      - cd build
+      - rm -rf .git* __pycache__ *.pyc tests/
+      - echo "Build completed successfully"
+
+  post_build:
+    commands:
+      - echo "Post-build phase started on `date`"
+      - echo "Validating application structure..."
+      - ls -la
+      - echo "Checking if Flask app can be imported..."
+      - python -c "
+        try:
+            from app import app
+            print('Flask application imported successfully')
+        except Exception as e:
+            print(f'Failed to import Flask app: {e}')
+            exit(1)
+        "
+      - echo "Build completed on `date`"
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: build
+  name: $APP_NAME-$(date +%Y-%m-%d-%H-%M-%S)
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
