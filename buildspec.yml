@@ -85,7 +85,3 @@ artifacts:
     - '**/*'
   base-directory: build
   name: $APP_NAME-$(date +%Y-%m-%d-%H-%M-%S)
-
-cache:
-  paths:
-    - '/root/.cache/pip/**/*'
