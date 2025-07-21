@@ -15,7 +15,7 @@ env:
 phases:
   install:
     runtime-versions:
-      python: 3.9
+      python: 3.10
     commands:
       - echo "Installing Python dependencies..."
       - pip install -r requirements.txt pytest flake8
@@ -49,7 +49,5 @@ reports:
     file-format: Cobertura
 
 artifacts:
-  base-directory: build
   files:
     - '**/*'
-  name: $APP_NAME-$(date +%Y-%m-%d-%H-%M-%S)
