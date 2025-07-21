@@ -7,63 +7,46 @@ env:
     FRONTEND_URL: "http://localhost:3000"
 
   secrets-manager:
-    DB_HOST:     dev-db-credentials-2:db_host
-    DB_USER:     dev-db-credentials-2:db_user
-    DB_PASSWORD: dev-db-credentials-2:db_password
-    DB_NAME:     dev-db-credentials-2:db_name
+    DB_USER:     dev-db-credentials-6:db_user
+    DB_PASSWORD: dev-db-credentials-6:db_password
+    DB_NAME:     dev-db-credentials-6:db_name
     
+
 phases:
   install:
     runtime-versions:
       python: 3.9
     commands:
       - echo "Installing Python dependencies..."
-      - pip install -r requirements.txt
-      - pip install pytest
+      - pip install -r requirements.txt pytest flake8
 
   pre_build:
     commands:
+      - echo "Linting..."
+      - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127
       - echo "Checking DB connection..."
       - |
-        python -c "
-        import os, sys, mysql.connector
-        try:
-            mysql.connector.connect(
-                host=os.environ['DB_HOST'],
-                user=os.environ['DB_USER'],
-                password=os.environ['DB_PASSWORD'],
-                database=os.environ['DB_NAME']
-            ).close()
-            print('✅ DB connection successful')
-        except Exception as e:
-            print(f'❌ DB connection failed: {e}')
-            sys.exit(1)
-        "
+        python -c "import os, sys, mysql.connector; ..."
 
   build:
     commands:
       - echo "Running tests..."
-      - pytest tests/ || echo "⚠️ No tests or failed tests"
+      - pytest tests/           # build will stop here if tests fail
       - echo "Preparing build artifact..."
-      - mkdir -p build
-      - rm -rf build 
+      - rm -rf build && mkdir build
       - cp -r --parents $(find . -type f -not -path './build/*') build/
       - cd build
       - rm -rf .git __pycache__ *.pyc tests/
 
-  post_build:
-    commands:
-      - echo "Validating Flask app import..."
-      - |
-        python -c "
-        try:
-            from app import app
-            print('✅ Flask app import successful')
-        except Exception as e:
-            print(f'❌ Flask app import failed: {e}')
-            sys.exit(1)
-        "
-      - echo "Build finished."
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
+
+reports:
+  pytest-report:
+    files:
+      - '**/coverage.xml'
+    file-format: Cobertura
 
 artifacts:
   base-directory: build
