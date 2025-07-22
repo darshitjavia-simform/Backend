@@ -25,6 +25,7 @@ else:
     CORS(app, origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
     logger.warning("FRONTEND_URL not set, using default origins for development")
 
+
 # Database connection function using credentials from environment variables
 def get_db_connection():
     try:
@@ -39,6 +40,7 @@ def get_db_connection():
     except Error as err:
         logger.error(f"Database connection error: {err}")
         raise
+
 
 # Test database connection on startup
 def test_db_connection():
@@ -55,6 +57,7 @@ def test_db_connection():
         logger.error(f"Database connection failed: {err}")
         return False
 
+
 # GET: Retrieve all todos
 @app.route('/api/todos', methods=['GET'])
 def get_todos():
@@ -69,6 +72,7 @@ def get_todos():
     except Error as err:
         logger.error(f"Error fetching todos: {err}")
         return jsonify({"message": "Failed to fetch todos", "error": str(err)}), 500
+
 
 # GET: Retrieve a specific todo
 @app.route('/api/todos/<int:id>', methods=['GET'])
@@ -89,38 +93,39 @@ def get_todo(id):
         logger.error(f"Error fetching todo {id}: {err}")
         return jsonify({"message": "Failed to fetch todo", "error": str(err)}), 500
 
+
 # POST: Add a new todo
 @app.route('/api/todos', methods=['POST'])
 def add_todo():
     try:
         data = request.get_json()
-        
+
         # Validate input
         if not data or 'task' not in data:
             return jsonify({"message": "Task is required"}), 400
-        
+
         task = data['task'].strip()
         if not task:
             return jsonify({"message": "Task cannot be empty"}), 400
-            
+
         done = data.get('done', False)
-        
+
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
-        
+
         # Insert new todo
         cursor.execute("INSERT INTO todos (task, done) VALUES (%s, %s)", (task, done))
         todo_id = cursor.lastrowid
-        
+
         # Fetch the inserted todo
         cursor.execute("SELECT * FROM todos WHERE id = %s", (todo_id,))
         new_todo = cursor.fetchone()
-        
+
         cursor.close()
         connection.close()
 
         return jsonify(new_todo), 201
-    
+
     except Error as err:
         logger.error(f"Error adding todo: {err}")
         return jsonify({"message": "Failed to add todo", "error": str(err)}), 500
@@ -128,24 +133,47 @@ def add_todo():
         logger.error(f"Unexpected error in add_todo: {e}")
         return jsonify({"message": "An unexpected error occurred"}), 500
 
+
+def _validate_todo_update_data(data):
+    """Validate and process update data for a todo."""
+    if not data:
+        return None, None, "Request body is required"
+
+    task = data.get("task")
+    done = data.get("done")
+
+    if task is not None:
+        task = task.strip()
+        if not task:
+            return None, None, "Task cannot be empty"
+
+    if task is None and done is None:
+        return None, None, "No fields to update"
+
+    return task, done, None
+
+
+def _update_todo_fields(cursor, todo_id, task, done):
+    """Update todo fields in the database."""
+    if task is not None and done is not None:
+        cursor.execute("UPDATE todos SET task = %s, done = %s WHERE id = %s", (task, done, todo_id))
+    elif task is not None:
+        cursor.execute("UPDATE todos SET task = %s WHERE id = %s", (task, todo_id))
+    elif done is not None:
+        cursor.execute("UPDATE todos SET done = %s WHERE id = %s", (done, todo_id))
+
+
 # PUT: Update a todo
 @app.route('/api/todos/<int:id>', methods=['PUT'])
 def update_todo(id):
     try:
         data = request.get_json()
-        
+
         # Validate input
-        if not data:
-            return jsonify({"message": "Request body is required"}), 400
-        
-        task = data.get("task")
-        done = data.get("done")
-        
-        if task is not None:
-            task = task.strip()
-            if not task:
-                return jsonify({"message": "Task cannot be empty"}), 400
-        
+        task, done, error_message = _validate_todo_update_data(data)
+        if error_message:
+            return jsonify({"message": error_message}), 400
+
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
 
@@ -158,33 +186,25 @@ def update_todo(id):
             connection.close()
             return jsonify({"message": "Todo not found"}), 404
 
-        # Update fields that were provided
-        if task is not None and done is not None:
-            cursor.execute("UPDATE todos SET task = %s, done = %s WHERE id = %s", (task, done, id))
-        elif task is not None:
-            cursor.execute("UPDATE todos SET task = %s WHERE id = %s", (task, id))
-        elif done is not None:
-            cursor.execute("UPDATE todos SET done = %s WHERE id = %s", (done, id))
-        else:
-            cursor.close()
-            connection.close()
-            return jsonify({"message": "No fields to update"}), 400
+        # Update fields
+        _update_todo_fields(cursor, id, task, done)
 
         # Fetch the updated todo
         cursor.execute("SELECT * FROM todos WHERE id = %s", (id,))
         updated_todo = cursor.fetchone()
-        
+
         cursor.close()
         connection.close()
 
         return jsonify(updated_todo)
-    
+
     except Error as err:
         logger.error(f"Error updating todo {id}: {err}")
         return jsonify({"message": "Failed to update todo", "error": str(err)}), 500
     except Exception as e:
         logger.error(f"Unexpected error in update_todo: {e}")
         return jsonify({"message": "An unexpected error occurred"}), 500
+
 
 # DELETE: Delete a todo
 @app.route('/api/todos/<int:id>', methods=['DELETE'])
@@ -204,18 +224,19 @@ def delete_todo(id):
 
         # Delete the todo
         cursor.execute("DELETE FROM todos WHERE id = %s", (id,))
-        
+
         cursor.close()
         connection.close()
 
         return jsonify({"message": "Todo deleted successfully"}), 200
-    
+
     except Error as err:
         logger.error(f"Error deleting todo {id}: {err}")
         return jsonify({"message": "Failed to delete todo", "error": str(err)}), 500
     except Exception as e:
         logger.error(f"Unexpected error in delete_todo: {e}")
         return jsonify({"message": "An unexpected error occurred"}), 500
+
 
 # Home route
 @app.route('/')
@@ -231,6 +252,7 @@ def home():
         ]
     })
 
+
 # Health check endpoint
 @app.route('/health')
 def health_check():
@@ -242,7 +264,7 @@ def health_check():
         cursor.fetchone()
         cursor.close()
         connection.close()
-        
+
         return jsonify({
             "status": "healthy",
             "database": "connected",
@@ -255,6 +277,7 @@ def health_check():
             "error": str(err)
         }), 500
 
+
 if __name__ == '__main__':
     # Test database connection before starting the app
     if test_db_connection():
@@ -264,6 +287,6 @@ if __name__ == '__main__':
         logger.error("Failed to connect to database. Please check your database credentials.")
         print("\nPlease verify your .env file contains correct database credentials:")
         print("DB_HOST=localhost")
-        print("DB_USER=your_mysql_username") 
+        print("DB_USER=your_mysql_username")
         print("DB_PASSWORD=your_mysql_password")
         print("DB_NAME=your_database_name")
