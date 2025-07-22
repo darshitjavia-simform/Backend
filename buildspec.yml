@@ -21,7 +21,7 @@ phases:
     commands:
       - pip install --upgrade pip
       - pip install -r requirements.txt
-      - pip install pytest pytest-cov  # Add test dependencies
+      - pip install pytest pytest-cov pytest-junit  # Add junit reporter
       - pip install awscli
       - pip install jq
       
@@ -33,7 +33,8 @@ phases:
       - export DB_PASSWORD=$(echo $DB_CREDENTIALS | jq -r '.password')
       - export DB_HOST=$(aws ssm get-parameter --name /dev/db/endpoint --query 'Parameter.Value' --output text)
       - echo "Running tests..."
-      - python -m pytest tests/ --cov=. --cov-report=xml || echo "Tests failed but continuing build"
+      - python -m pytest tests/ --junitxml=test-reports/junit.xml --cov=. --cov-report=xml || echo "Tests failed but continuing build"
+      - mkdir -p test-reports
       
   build:
     commands:
@@ -51,10 +52,10 @@ cache:
     - '/root/.cache/pip/**/*'
 
 reports:
-  pytest-report:
+  pytest:
     files:
-      - '**/coverage.xml'
-    file-format: Cobertura
+      - 'test-reports/junit.xml'
+    file-format: JUNITXML
 
 artifacts:
   files:
@@ -62,6 +63,8 @@ artifacts:
     - requirements.txt
     - scripts/**/*
     - appspec.yml
+    - coverage.xml
+    - test-reports/**/*
   base-directory: '.'
   discard-paths: no
 
