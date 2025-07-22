@@ -44,9 +44,3 @@ artifacts:
 cache:
   paths:
     - '/root/.cache/pip'
-
-env:
-  parameter-store:
-    DB_HOST: /dev/db/endpoint
-  secrets-manager:
-    DB_CREDENTIALS: dev-db-credentials-00
