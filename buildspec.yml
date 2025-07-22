@@ -28,20 +28,18 @@ phases:
       # - flake8 . --count --max-complexity=10 --max-line-length=127
       - echo "Checking DB connection..."
       - |
-        python -c "
-        import os, sys, mysql.connector
-        try:
-            mysql.connector.connect(
-                host=os.environ['DB_HOST'],
-                user=os.environ['DB_USER'],
-                password=os.environ['DB_PASSWORD'],
-                database=os.environ['DB_NAME']
-            ).close()
-            print('✅ DB connection successful')
-        except Exception as e:
-            print(f'❌ DB connection failed: {e}')
-            sys.exit(1)
-        "
+        python -c 'import os, sys, mysql.connector
+try:
+    mysql.connector.connect(
+        host=os.environ["DB_HOST"],
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        database=os.environ["DB_NAME"]
+    ).close()
+    print("✅ DB connection successful")
+except Exception as e:
+    print(f"❌ DB connection failed: {e}")
+    sys.exit(1)'
 
   build:
     commands:
