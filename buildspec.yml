@@ -1,10 +1,18 @@
 version: 0.2
 
-env :
+env:
+  variables:
+    PYTHON_VERSION: "3.10"
+    APP_NAME: "todo-api"
+    FRONTEND_URL: "http://localhost:3000"
+
   parameter-store:
-    DB_HOST: /dev/db/endpoint
+    DB_HOST: /dev/db/endpoint            # <-- your Parameter Store key
+
   secrets-manager:
-    DB_CREDENTIALS: dev-db-credentials-00
+    DB_USER:     dev-db-credentials-00:db_user
+    DB_PASSWORD: dev-db-credentials-00:db_password
+    DB_NAME:     dev-db-credentials-00:db_name
 
 phases:
   install:
@@ -28,25 +36,33 @@ phases:
       
   build:
     commands:
-      - echo "Starting build phase..."
-      - python -m pylint --fail-under=7 *.py || exit 0
-      
-  post_build:
-    commands:
-      - echo "Build completed successfully"
+      - echo "Running tests..."
+      - pytest tests/                     # build fails if tests fail
+      - echo "Preparing build artifact..."
+      - rm -rf build && mkdir build
+      - cp -r --parents $(find . -type f -not -path './build/*') build/
+      - cd build
+      - rm -rf .git __pycache__ *.pyc tests/
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
+
+reports:
+  pytest-report:
+    files:
+      - '**/coverage.xml'
+    file-format: Cobertura
 
 artifacts:
   files:
-    - '**/*'
+    - server.py
+    - requirements.txt
+    - scripts/**/*
+    - appspec.yml
   base-directory: '.'
   discard-paths: no
 
 cache:
   paths:
     - '/root/.cache/pip'
-
-env:
-  parameter-store:
-    DB_HOST: /dev/db/endpoint
-  secrets-manager:
-    DB_CREDENTIALS: dev-db-credentials-00
