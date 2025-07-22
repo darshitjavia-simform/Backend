@@ -7,14 +7,12 @@ env:
     FRONTEND_URL: "http://localhost:3000"
 
   parameter-store:
-    DB_HOST: /dev/db/endpoint            # <-- your Parameter Store key
+    DB_HOST: /dev/db/endpoint
 
   secrets-manager:
-    DB_USER:     dev-db-credentials-00:db_user
+    DB_USER: dev-db-credentials-00:db_user
     DB_PASSWORD: dev-db-credentials-00:db_password
-    DB_NAME:     dev-db-credentials-00:db_name
-
-version: 0.2
+    DB_NAME: dev-db-credentials-00:db_name
 
 phases:
   install:
@@ -24,7 +22,8 @@ phases:
       - pip install --upgrade pip
       - pip install -r requirements.txt
       - pip install awscli
-      - apt install -y jq  # ✅ install jq
+      - apt-get update
+      - apt-get install -y jq netcat-openbsd
 
   pre_build:
     commands:
@@ -32,7 +31,7 @@ phases:
       - export DB_CREDENTIALS=$(aws secretsmanager get-secret-value --secret-id dev-db-credentials-00 --query 'SecretString' --output text)
       - export DB_USER=$(echo $DB_CREDENTIALS | jq -r '.username')
       - export DB_PASSWORD=$(echo $DB_CREDENTIALS | jq -r '.password')
-      - export DB_NAME=$(echo $DB_CREDENTIALS | jq -r '.dbname')  # optional
+      - export DB_NAME=$(echo $DB_CREDENTIALS | jq -r '.dbname')
       - export DB_HOST=$(aws ssm get-parameter --name /dev/db/endpoint --query 'Parameter.Value' --output text)
       - echo "Checking DB connectivity..."
       - nc -zv $DB_HOST 3306 || echo "Warning: DB not reachable"
