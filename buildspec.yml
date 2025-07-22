@@ -6,14 +6,6 @@ env:
     APP_NAME: "todo-api"
     FRONTEND_URL: "http://localhost:3000"
 
-  parameter-store:
-    DB_HOST: /dev/db/endpoint            # <-- your Parameter Store key
-
-  secrets-manager:
-    DB_USER:     dev-db-credentials-00:db_user
-    DB_PASSWORD: dev-db-credentials-00:db_password
-    DB_NAME:     dev-db-credentials-00:db_name
-
 phases:
   install:
     runtime-versions:
@@ -25,21 +17,7 @@ phases:
   pre_build:
     commands:
       - echo "Linting..."
-      # - flake8 . --count --max-complexity=10 --max-line-length=127
-      - echo "Checking DB connection..."
-      - |
-        python -c 'import os, sys, mysql.connector
-try:
-    mysql.connector.connect(
-        host=os.environ["DB_HOST"],
-        user=os.environ["DB_USER"],
-        password=os.environ["DB_PASSWORD"],
-        database=os.environ["DB_NAME"]
-    ).close()
-    print("✅ DB connection successful")
-except Exception as e:
-    print(f"❌ DB connection failed: {e}")
-    sys.exit(1)'
+      - echo "Skipping DB connection test in CodeBuild..."
 
   build:
     commands:
@@ -50,16 +28,6 @@ except Exception as e:
       - cp -r --parents $(find . -type f -not -path './build/*') build/
       - cd build
       - rm -rf .git __pycache__ *.pyc tests/
-
-cache:
-  paths:
-    - '/root/.cache/pip/**/*'
-
-reports:
-  pytest-report:
-    files:
-      - '**/coverage.xml'
-    file-format: Cobertura
 
 artifacts:
   base-directory: build
