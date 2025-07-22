@@ -290,3 +290,4 @@ if __name__ == '__main__':
         print("DB_USER=your_mysql_username")
         print("DB_PASSWORD=your_mysql_password")
         print("DB_NAME=your_database_name")
+        
