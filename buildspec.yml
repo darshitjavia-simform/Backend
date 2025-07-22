@@ -1,51 +1,70 @@
 version: 0.2
 
+env:
+  variables:
+    PYTHON_VERSION: "3.10"
+    APP_NAME: "todo-api"
+    FRONTEND_URL: "http://localhost:3000"
+
+  parameter-store:
+    DB_HOST: /dev/db/endpoint            # <-- your Parameter Store key
+
+  secrets-manager:
+    DB_USER:     dev-db-credentials-00:db_user
+    DB_PASSWORD: dev-db-credentials-00:db_password
+    DB_NAME:     dev-db-credentials-00:db_name
+
 phases:
   install:
     runtime-versions:
       python: 3.10
     commands:
-      - echo "Installing dependencies..."
-      - pip install --upgrade pip
-      - pip install -r requirements.txt
+      - echo "Installing Python dependencies..."
+      - pip install -r requirements.txt pytest flake8
 
   pre_build:
     commands:
-      - echo "Fetching DB host from Parameter Store..."
-      - DB_HOST=$(aws ssm get-parameter \
-          --name "/dev/db/endpoint" \
-          --with-decryption \
-          --region us-east-1 \
-          --query "Parameter.Value" \
-          --output text)
-
-      - echo "Fetching DB credentials from Secrets Manager..."
-      - SECRET_JSON=$(aws secretsmanager get-secret-value \
-          --secret-id "dev-db-credentials-00" \
-          --region us-east-1 \
-          --query SecretString \
-          --output text)
-
-      - DB_USER=$(echo $SECRET_JSON | jq -r .db_user)
-      - DB_PASSWORD=$(echo $SECRET_JSON | jq -r .db_password)
-      - DB_NAME=$(echo $SECRET_JSON | jq -r .db_name)
-
-      - echo "Creating .env file..."
-      - echo "DB_HOST=$DB_HOST"       >> .env
-      - echo "DB_USER=$DB_USER"       >> .env
-      - echo "DB_PASSWORD=$DB_PASSWORD" >> .env
-      - echo "DB_NAME=$DB_NAME"       >> .env
+      - echo "Linting..."
+      - flake8 . --count --max-complexity=10 --max-line-length=127
+      - echo "Checking DB connection..."
+      - |
+        python -c "
+        import os, sys, mysql.connector
+        try:
+            mysql.connector.connect(
+                host=os.environ['DB_HOST'],
+                user=os.environ['DB_USER'],
+                password=os.environ['DB_PASSWORD'],
+                database=os.environ['DB_NAME']
+            ).close()
+            print('✅ DB connection successful')
+        except Exception as e:
+            print(f'❌ DB connection failed: {e}')
+            sys.exit(1)
+        "
 
   build:
     commands:
-      - echo "Running backend build logic..."
-      - cat .env  # Just for verification (remove in production)
-      - python -m unittest discover tests  # if you have tests
+      - echo "Running tests..."
+      - pytest tests/                     # build fails if tests fail
+      - echo "Preparing build artifact..."
+      - rm -rf build && mkdir build
+      - cp -r --parents $(find . -type f -not -path './build/*') build/
+      - cd build
+      - rm -rf .git __pycache__ *.pyc tests/
 
-  post_build:
-    commands:
-      - echo "Build completed on `date`"
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
+
+reports:
+  pytest-report:
+    files:
+      - '**/coverage.xml'
+    file-format: Cobertura
 
 artifacts:
+  base-directory: build
   files:
     - '**/*'
+  name: ${APP_NAME}-$(date +%Y-%m-%d-%H-%M-%S)
