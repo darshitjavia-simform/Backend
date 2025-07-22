@@ -14,20 +14,20 @@ env:
     DB_PASSWORD: dev-db-credentials-00:db_password
     DB_NAME: dev-db-credentials-00:db_name
 
-version: 0.2
-
 phases:
   install:
     runtime-versions:
       python: 3.9
     commands:
+      - python -m venv venv
+      - . venv/bin/activate
       - pip install --upgrade pip
       - pip install -r requirements.txt
-      - pip install awscli
-      - pip install jq  # ✅ install jq
+      - pip install awscli pylint jq pytest pytest-cov
 
   pre_build:
     commands:
+      - . venv/bin/activate
       - echo "Retrieving secrets and parameters..."
       - export DB_CREDENTIALS=$(aws secretsmanager get-secret-value --secret-id dev-db-credentials-00 --query 'SecretString' --output text)
       - export DB_USER=$(echo $DB_CREDENTIALS | jq -r '.username')
@@ -41,8 +41,10 @@ phases:
 
   build:
     commands:
+      - . venv/bin/activate
       - echo "Starting build phase..."
-      - python -m pylint --fail-under=7 *.py || exit 0
+      - mkdir -p tests
+      - python -m pylint --fail-under=7 *.py || echo "Linting check completed"
 
   post_build:
     commands:
