@@ -8,4 +8,4 @@ echo "Starting Python backend server..."
 export $(grep -v '^#' .env | xargs)
 
 # Start app (adjust if using Gunicorn, Flask, etc.)
-nohup python3 app.py > app.log 2>&1 &
+nohup python3 server.py > app.log 2>&1 &

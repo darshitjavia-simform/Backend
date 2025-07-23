@@ -1,3 +1,3 @@
 #!/bin/bash
 echo "Stopping Python backend..."
-pkill -f app.py || true
+pkill -f server.py || true
