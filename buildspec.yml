@@ -38,6 +38,7 @@ phases:
 artifacts:
   files:
     - '**/*'
+    - .env
   base-directory: '.'
   discard-paths: no
 
