@@ -5,6 +5,20 @@ from mysql.connector import Error
 from dotenv import load_dotenv
 import os
 import logging
+import boto3
+import json
+
+
+client = boto3.client('secretsmanager', region_name='us-east-2')
+
+response = client.get_secret_value(SecretId='dev-db-credentials-00')
+secrets = json.loads(response['SecretString'])
+
+db_user = secrets['db_user']
+db_password = secrets['db_password']
+db_name = secrets['db_name']
+db_host = os.getenv("DB_HOST")  # fetched from environment variable (Parameter Store)
+
 
 # Load environment variables from the .env file
 load_dotenv()
