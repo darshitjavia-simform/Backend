@@ -11,7 +11,7 @@ import json
 
 client = boto3.client('secretsmanager', region_name='us-east-2')
 
-response = client.get_secret_value(SecretId='dev-db-credentials-00')
+response = client.get_secret_value(SecretId='dev-db-credentials-1')
 secrets = json.loads(response['SecretString'])
 
 db_user = secrets['db_user']
